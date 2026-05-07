@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Finishers Counter</title>
+
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            background: #063234;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        #number {
+            font-size: 20vw;
+            font-weight: bold;
+            line-height: 1;
+            display: flex;
+            gap: 0.02em;
+        }
+
+        .digit-container {
+            position: relative;
+            overflow: hidden;
+            height: 1em;
+            width: 0.65em;
+        }
+
+        .digit-strip {
+            position: absolute;
+            top: 0;
+            left: 0;
+            transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .digit {
+            height: 1em;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        @media (max-width: 600px) {
+            #number {
+                font-size: 30vw;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="number"></div>
+
+    <script>
+        const url = "https://events.raceresult.com/api/presenter/window?eventid=397892&name=Finishers&key=71FvK2LpJqDK&lang=&screen=0&index=0";
+
+        const numberElement = document.getElementById("number");
+
+        function createDigitColumn(initialDigit = 0) {
+            const container = document.createElement("div");
+            container.className = "digit-container";
+
+            const strip = document.createElement("div");
+            strip.className = "digit-strip";
+
+            // Repeat digits multiple times for smooth rolling
+            for (let i = 0; i < 30; i++) {
+                const digit = document.createElement("div");
+                digit.className = "digit";
+                digit.textContent = i % 10;
+                strip.appendChild(digit);
+            }
+
+            container.appendChild(strip);
+
+            return { container, strip };
+        }
+
+        let columns = [];
+        let currentNumber = "";
+
+        function setNumber(value) {
+            const str = String(value);
+
+            // Create columns if needed
+            if (columns.length !== str.length) {
+                numberElement.innerHTML = "";
+                columns = [];
+
+                for (let i = 0; i < str.length; i++) {
+                    const col = createDigitColumn();
+                    columns.push(col);
+                    numberElement.appendChild(col.container);
+                }
+            }
+
+            str.split("").forEach((char, index) => {
+                const digit = parseInt(char);
+
+                // Roll further every update for continuous effect
+                const offset = (20 + digit) * 1;
+
+                columns[index].strip.style.transform =
+                    `translateY(-${offset}em)`;
+            });
+
+            currentNumber = str;
+        }
+
+        async function fetchNumber() {
+            try {
+                const response = await fetch(url);
+                const text = await response.text();
+
+                const data = JSON.parse(text);
+
+                const total = data.Data[1][1];
+
+                console.log(new Date().toLocaleTimeString() + " Total: " + total);
+
+                setNumber(total);
+
+            } catch (err) {
+                console.error(err);
+                numberElement.innerHTML = "ERR";
+            }
+        }
+
+        // Initial load
+        fetchNumber();
+
+        // Refresh every 10 seconds
+        setInterval(fetchNumber, 1000);
+    </script>
+</body>
+
+</html>
